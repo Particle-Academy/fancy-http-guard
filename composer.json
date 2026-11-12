@@ -1,0 +1,64 @@
+{
+    "name": "particle-academy/fancy-http-guard",
+    "description": "Laravel request guards checked before the body is parsed (413, nesting depth, list length, finite numbers with the field path, workbook rows x columns caps paired with holy-sheet), one error envelope with a request id on every response, and an HTTP-client normaliser. Every limit configurable.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["laravel", "middleware", "request-guard", "body-size", "json", "validation", "error-envelope", "request-id", "fancy", "particle-academy"],
+    "homepage": "https://github.com/Particle-Academy/fancy-http-guard",
+    "support": {
+        "issues": "https://github.com/Particle-Academy/fancy-http-guard/issues",
+        "source": "https://github.com/Particle-Academy/fancy-http-guard"
+    },
+    "authors": [
+        {
+            "name": "Particle Academy",
+            "homepage": "https://github.com/Particle-Academy"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "illuminate/contracts": "^13.0",
+        "illuminate/http": "^13.0",
+        "illuminate/routing": "^13.0",
+        "illuminate/support": "^13.0",
+        "illuminate/validation": "^13.0"
+    },
+    "require-dev": {
+        "laravel/framework": "^13.30",
+        "particle-academy/holy-sheet": "^2.14",
+        "pestphp/pest": "^5.0"
+    },
+    "suggest": {
+        "particle-academy/holy-sheet": "Reads uploaded workbooks under the route's rows x columns caps: FancyHttpGuard::readWorkbook()."
+    },
+    "autoload": {
+        "psr-4": {
+            "ParticleAcademy\\HttpGuard\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ParticleAcademy\\HttpGuard\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "pest"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ParticleAcademy\\HttpGuard\\HttpGuardServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        },
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

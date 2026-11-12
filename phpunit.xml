@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="vendor/autoload.php" colors="true" cacheDirectory=".phpunit.cache" failOnWarning="true" failOnRisky="true">
+    <testsuites><testsuite name="FancyHttpGuard"><directory>tests</directory></testsuite></testsuites>
+    <source><include><directory>src</directory></include></source>
+    <php>
+        <!-- The suite touches no database, and it must never be able to. Genie
+             hands every process DB_CONNECTION=pgsql; <env force> alone does not
+             reach $_SERVER, which Laravel reads first, so both are forced. -->
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
+        <env name="DB_DATABASE" value=":memory:" force="true"/>
+        <server name="DB_CONNECTION" value="sqlite" force="true"/>
+        <server name="DB_DATABASE" value=":memory:" force="true"/>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <server name="APP_ENV" value="testing" force="true"/>
+    </php>
+</phpunit>
