@@ -1,62 +1,74 @@
-# AGENTS.md — fancy-http-guard (Laravel)
+# Using particle-academy/fancy-http-guard (Laravel) — guide for agents
 
-Request guards, the error envelope, and the HTTP-client normaliser. `CLAUDE.md`
-is a symlink to this file. Process rules live in the envelope's `RULES.md`.
+How an agent installs and uses this package in a consumer app. What the package
+is, is in [README.md](./README.md). Notes for working ON this repo's code are in
+[CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## The contract
-
-fancy-conformance `suites/http/SPEC.md` (CC-fancy-0031).
-
-- **`http/request-guards`:** the guard, the renderer and the workbook pairing.
-- **`http/error-envelope`:** the sentences and the client normaliser.
-
-The Python guard and the TypeScript normaliser run the same rows. **Behaviour
-changes in the spec and its rows first.**
-
-## The rules that shape this repo
-
-- **Global and PREPENDED.** TrimStrings and ConvertEmptyStringsToNull are global
-  middleware that call `$request->json()`. A guard anywhere later checks a body
-  already parsed. The sabotage sweep appends it instead and the suite fails.
-- **It matches the route itself**, because global middleware runs before
-  routing. A 404/405 from that match means the default limits; it is never
-  answered there.
-- **Refuse unread.** `Content-Length` first. Then
-  `stream_get_contents(getContent(true), cap + 1)`, which is bounded. Symfony
-  rewinds a content resource on the next `getContent()`, and `php://input` is
-  re-readable, so a passing body still reaches the controller whole.
-- **An empty `CONTENT_LENGTH` is absent.** PHP-FPM sends one on every GET.
-- **Exception text is never echoed.** `Renderer::render` ends in a fixed 500. An
-  HttpException made from ANOTHER exception (it has a `getPrevious()`) does not
-  show its message, except when the previous is an `AuthorizationException`,
-  whose message the app wrote.
-- **Inertia:** the guard runs before the session, so a 422 there is deferred to
-  `DeferredInertiaValidation` in the `web` group. Every other refusal answers at
-  once.
-- **No third-party runtime dependency.** Only `illuminate/*` (PinTest enforces
-  it). holy-sheet, `illuminate/auth` and `Context` are optional, through
-  `class_exists` / `instanceof`.
-
-## Testing
+## Install
 
 ```bash
-composer update
-vendor/bin/pest               # conformance tables + hostile cases, through the real HTTP kernel
-php tests/sabotage.php        # 19 mutations, every one must be CAUGHT
+composer require particle-academy/fancy-http-guard
 ```
 
-- **A real Laravel app.** `tests/Support/TestApp.php` builds one with
-  `Application::configure(...)->create()`, exactly as a consumer's
-  `bootstrap/app.php` does, and drives the real HTTP kernel. There is no
-  orchestra/testbench (not approved): Laravel itself is the test dependency,
-  under the framework carve-out.
-- **Bodies are php://temp STREAMS**, so `ftell()` after a refusal measures what
-  the guard read.
-- **The tables come from a fancy-conformance checkout**, never Packagist:
-  `FANCY_CONFORMANCE_ROOT` in CI (at `ref: v<Rows::PINNED_SUITE_VERSION>`),
-  else the envelope's sibling checkout. Move the pin and the `ci.yml` ref
-  together.
-- **SQLite is forced** in `phpunit.xml` (`<env force>` and `<server force>`),
-  though nothing here touches a database.
-- **json_decode's depth is containers + 1.** The normaliser passes
-  `maxDepth + 1`, and rows depth-64 / depth-65 pin the edge.
+- **Not on Packagist yet.** The command above works once it is published.
+- Requires PHP `^8.4` (with `ext-json`, `ext-mbstring`) and Laravel 13
+  components only. The service provider is auto-discovered. holy-sheet is
+  optional, for workbooks.
+
+```php
+// bootstrap/app.php
+use ParticleAcademy\HttpGuard\FancyHttpGuard;
+
+->withMiddleware(fn (Middleware $middleware) => FancyHttpGuard::install($middleware))
+->withExceptions(fn (Exceptions $exceptions) => FancyHttpGuard::exceptions($exceptions))
+```
+
+Settings: `php artisan vendor:publish --tag=fancy-http-guard-config`.
+
+## Find it on the Fancy MCP server
+
+Not listed on the Fancy MCP catalog server
+(`https://ui.particle.academy/mcp`, MCP id `fancy-ui`) yet; it appears there
+once published. Look for it later with `search-backend-packages` (stack `php`).
+The Python twin is `fancy-http-guard` (FastAPI / Starlette), and the browser
+side is `@particle-academy/fancy-http-errors`.
+
+## API essentials
+
+- **Per-route limits:** `Route::post(...)->guard('upload')` (a profile; `upload`
+  is 10 MiB) or `->guard(['maxDepth' => 4])` (inline). The `routes` setting maps
+  limits by route name.
+- **Limits** (all settings, secure defaults): `maxBodyBytes` (1 MiB),
+  `maxDepth` (32), `maxListLength` (10,000), `maxErrors` (20), `finiteNumbers`
+  (true), `workbook.maxRows` / `maxColumns` / `maxCells`. Also `profiles`,
+  `routes`, `request_id_header`, `trust_incoming_request_id`.
+- **The envelope:** every JSON error is `{error, message, errors?, limit?,
+  retryAfter?, requestId}`, with `X-Request-Id` on every response.
+- **A public 5xx:** `throw HttpError::public(503, 'maintenance', 'Back at 14:00
+  UTC.', retryAfter: 600)`.
+- **Workbooks:** `FancyHttpGuard::readWorkbook($bytes, field: 'file')`, or
+  `$request->attributes->get('fancy_guard')->readWorkbook($bytes)` under the
+  route's limits.
+- **HTTP-client normaliser:** `$response->fancyError()` on a Laravel `Http`
+  response returns `null` on a 2xx / 3xx, else an error with `sentence` and
+  `fields`.
+
+## Traps
+
+- **Use `FancyHttpGuard::install()`.** It prepends the guard to the global
+  middleware stack; `TrimStrings` and `ConvertEmptyStringsToNull` decode the
+  body before any route middleware, so a guard added later checks a body already
+  parsed.
+- **Multipart and urlencoded bodies are parsed by PHP itself** under PHP-FPM;
+  the guard checks only their `Content-Length`. Set `post_max_size` at or above
+  your largest route cap, and nginx `client_max_body_size` above that.
+- **A crash is a fixed 500, `APP_DEBUG` included.** The detail is in the log
+  under the request id.
+- **A 5xx never shows its message** unless thrown with `HttpError::public`. A
+  message Laravel built from another exception (such as
+  `ModelNotFoundException`) is not shown either; a policy's denial message is.
+- **Returned responses are never rewritten**, so Inertia's 409s pass through.
+  HTML pages and Inertia requests keep Laravel's own handling; a guard 422 on an
+  Inertia request becomes a normal `ValidationException`.
+- **A bad setting fails at boot**, or when a route declares it.
+- `trust_incoming_request_id` only behind a proxy that sets the header.
