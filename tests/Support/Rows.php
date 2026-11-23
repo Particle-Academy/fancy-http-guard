@@ -32,7 +32,7 @@ final class Rows
      * The fancy-conformance tag these tests pin. CI checks out `ref: v<this>`;
      * PinTest fails if the two disagree or the checkout is another version.
      */
-    public const PINNED_SUITE_VERSION = '0.48.0';
+    public const PINNED_SUITE_VERSION = '0.62.0';
 
     public const GEN = '$generated';
 
