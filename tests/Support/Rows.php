@@ -15,6 +15,7 @@ use ParticleAcademy\HttpGuard\HttpError;
 use ParticleAcademy\HttpGuard\Renderer;
 use ParticleAcademy\HttpGuard\Sentences;
 use ParticleAcademy\HttpGuard\Settings;
+use ParticleAcademy\HttpGuard\ValidationFailed;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
@@ -151,7 +152,8 @@ final class Rows
             'validation' => ValidationException::withMessages(
                 collect($t['errors'])->mapWithKeys(fn (array $e) => [$e['field'] => [$e['message']]])->all()
             ),
-            'public' => HttpError::public($t['status'], $t['error'], $t['message'], $t['retryAfter'] ?? null),
+            'public' => HttpError::public($t['status'], $t['error'], $t['message'], $t['retryAfter'] ?? null, $t['maxMessageLength'] ?? null),
+            'failed' => new ValidationFailed($t['errors']),
             'workbook' => in_array($t['limit'], ['maxRows', 'maxColumns', 'maxCells', 'maxSharedStrings'], true)
                 ? new ReadLimitExceeded($t['limit'], $t['max'], $t['actual'])
                 : ArchiveRefused::overLimit($t['limit'], $t['max'], $t['actual']),
@@ -166,6 +168,7 @@ final class Rows
         $config = $input['config'] ?? [];
         $ridHeader = strtolower($config['requestIdHeader'] ?? 'x-request-id');
         $app = TestApp::make([
+            'fancy-http-guard.limits' => $input['limits'] ?? [],
             'fancy-http-guard.request_id_header' => $ridHeader,
             'fancy-http-guard.trust_incoming_request_id' => $config['trustIncomingRequestId'] ?? false,
         ], static function () use ($t): void {

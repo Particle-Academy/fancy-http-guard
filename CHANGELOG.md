@@ -10,7 +10,35 @@ promising otherwise until 1.0.
 
 ## [Unreleased]
 
+### Added
+
+- `limits.maxMessageLength`, a setting for public error messages
+  (CC-fancy-0063): how many code points of the app's own sentence a 4xx message,
+  a validation item or a public 5xx keeps. Default 300, so **nothing changes
+  unless you set it**. Set it in config, a profile or `->guard([...])` like every
+  other limit; a value over 4,000 (`Settings::MESSAGE_LENGTH_BOUND`) is refused
+  at boot. A published `config/fancy-http-guard.php` without the key keeps 300.
+- A per-error override for one long refusal: `HttpError`'s new
+  `maxMessageLength` argument (also on `HttpError::public(...)`) and a
+  `ValidationFailed` item's `'maxMessageLength'`. It replaces the route's
+  setting for that error or item alone, and counts as 4,000 above 4,000. A
+  non-positive or non-integer value throws `InvalidArgumentException` where the
+  error is created.
+- `Renderer::render()` takes the route's length as a fourth argument (default
+  300); `FancyHttpGuard::exceptions()` passes it for you.
+- Tests: `tests/Feature/MessageLengthTest.php`, the shared rows' new `failed`
+  kind and `input.limits` in `tests/Support/Rows.php`, and four sabotage
+  mutations (23 in all). The shared rows (`http/request-guards` 0089 to 0098)
+  land in fancy-conformance after 0.63.0; all 98 pass here against that branch,
+  and the pin moves when it is released. That release also raises the envelope
+  schema's `message` bound to 4,000, and `resources/envelope.schema.json` must
+  take the new copy with the pin (`PinTest` enforces it).
+
 ### Changed
+
+- Sanitising is unchanged at any length: control characters are still stripped,
+  a message over its limit still truncates with an ellipsis, a crash is still
+  the fixed 500 and a non-public 5xx still never shows its message.
 
 - CI: re-pin org third-party allowlist to 2614224
 - Conformance fixtures 0.62.0: the `http/request-guards` rows are now pinned at fancy-conformance 0.62.0 (was 0.48.0), in the CI checkout ref and `PINNED_SUITE_VERSION`; the sabotage sweep still catches 19 of 19. Test-only; no runtime change, nothing to do.

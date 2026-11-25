@@ -25,6 +25,7 @@ return [
         'maxListLength' => 10000,        // arrays AND objects
         'maxErrors' => 20,               // items in one 422
         'finiteNumbers' => true,         // NaN, Infinity, 1e400 refused with the field path
+        'maxMessageLength' => 300,       // code points of a public message; at most 4000
         'workbook' => [                  // paired with holy-sheet's reader limits
             'maxRows' => 100000,
             'maxColumns' => 1000,

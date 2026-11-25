@@ -19,6 +19,7 @@ final class Settings
         'maxListLength' => 10000,
         'maxErrors' => 20,
         'finiteNumbers' => true,
+        'maxMessageLength' => 300,
         'workbook' => ['maxRows' => 100000, 'maxColumns' => 1000, 'maxCells' => 100000],
     ];
 
@@ -26,6 +27,13 @@ final class Settings
         'default' => [],
         'upload' => ['maxBodyBytes' => 10485760],
     ];
+
+    /**
+     * The hard bound on a public message, in code points (SPEC 3.1,
+     * CC-fancy-0063). No setting and no per-error override sends more, so a
+     * misconfiguration cannot send unbounded text.
+     */
+    public const MESSAGE_LENGTH_BOUND = 4000;
 
     private const INTS = ['maxBodyBytes', 'maxDepth', 'maxListLength', 'maxErrors'];
 
@@ -45,6 +53,8 @@ final class Settings
         foreach ($limits as $key => $value) {
             if (in_array($key, self::INTS, true)) {
                 $out[$key] = self::positive((string) $key, $value);
+            } elseif ($key === 'maxMessageLength') {
+                $out[$key] = self::messageLength((string) $key, $value);
             } elseif ($key === 'finiteNumbers') {
                 if (! is_bool($value)) {
                     throw self::refuse('finiteNumbers must be true or false');
@@ -61,7 +71,7 @@ final class Settings
                     $out['workbook'][$wk] = self::positive("workbook.{$wk}", $wv);
                 }
             } else {
-                throw self::refuse("unknown limit \"{$key}\"; known: ".implode(', ', [...self::INTS, 'finiteNumbers', 'workbook']));
+                throw self::refuse("unknown limit \"{$key}\"; known: ".implode(', ', [...self::INTS, 'finiteNumbers', 'maxMessageLength', 'workbook']));
             }
         }
 
@@ -113,6 +123,44 @@ final class Settings
             'maxPartBytes' => max(65536, 64 * $cells),
             'maxExpandedBytes' => max(262144, 256 * $cells),
         ];
+    }
+
+    /** A message length setting: a positive integer no greater than the bound. */
+    public static function messageLength(string $name, mixed $value): int
+    {
+        $n = self::positive($name, $value);
+        if ($n > self::MESSAGE_LENGTH_BOUND) {
+            throw self::refuse("{$name} must be at most ".self::MESSAGE_LENGTH_BOUND.", got {$n}");
+        }
+
+        return $n;
+    }
+
+    /**
+     * The length a message gets (SPEC 4.0): the error's own when it has one,
+     * else the route's; never more than the bound, whichever it came from.
+     */
+    public static function effectiveMessageLength(int $route, mixed $own = null): int
+    {
+        $chosen = is_int($own) && $own >= 1 ? $own : $route;
+
+        return max(1, min($chosen, self::MESSAGE_LENGTH_BOUND));
+    }
+
+    /**
+     * A per-error length: absent, or a positive integer. A wrong one is a
+     * programming error, refused where the app raises it.
+     */
+    public static function messageLengthOverride(mixed $value): ?int
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (! is_int($value) || $value < 1) {
+            throw self::refuse('maxMessageLength must be a positive integer, got '.var_export($value, true));
+        }
+
+        return $value;
     }
 
     private static function positive(string $name, mixed $value): int

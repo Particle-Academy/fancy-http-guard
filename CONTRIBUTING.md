@@ -47,7 +47,7 @@ changes in the spec and its rows first.**
 ```bash
 composer update
 vendor/bin/pest               # conformance tables + hostile cases, through the real HTTP kernel
-php tests/sabotage.php        # 19 mutations, every one must be CAUGHT
+php tests/sabotage.php        # 23 mutations, every one must be CAUGHT
 ```
 
 - **A real Laravel app.** `tests/Support/TestApp.php` builds one with

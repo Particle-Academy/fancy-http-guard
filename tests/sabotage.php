@@ -42,6 +42,11 @@ $mutations = [
     ['answers an Inertia 422 with JSON', 'Http/Middleware/GuardRequests.php', "if (\$refusal->status === 422 && \$request->headers->has('X-Inertia')) {", 'if (false) {'],
     ['half-to-even byte rounding', 'Sentences.php', '$tenths = intdiv($n * 10 + intdiv($unit, 2), $unit);', '$tenths = (int) round($n * 10 / $unit, 0, PHP_ROUND_HALF_EVEN);'],
     ["echoes holy-sheet's text", 'Renderer.php', 'Sentences::workbook($limit), $rid, $rh, null', '$e->getMessage(), $rid, $rh, null'],
+    // CC-fancy-0063: the public message length.
+    ['ignores the maxMessageLength setting', 'FancyHttpGuard.php', "(int) \$limits['maxMessageLength']", '300'],
+    ['no bound on the setting', 'Settings.php', 'if ($n > self::MESSAGE_LENGTH_BOUND) {', 'if (false) {'],
+    ['no bound on a per-error override', 'Settings.php', 'return max(1, min($chosen, self::MESSAGE_LENGTH_BOUND));', 'return max(1, $chosen);'],
+    ["ignores an item's own maxMessageLength", 'Renderer.php', "\$max = Settings::effectiveMessageLength(\$route, \$item['maxMessageLength'] ?? null);", '$max = $route;'],
 ];
 
 $suite = static function () use ($root): int {

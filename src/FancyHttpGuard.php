@@ -57,7 +57,12 @@ final class FancyHttpGuard
             $request->attributes->set('request_id', $rid);
         }
 
-        return Renderer::render($e, $rid, $rh)->toResponse();
+        // The route's limits, as the guard resolved them; the app's own when the
+        // guard did not run for this request.
+        $state = $request->attributes->get('fancy_guard');
+        $limits = $state instanceof GuardState ? $state->limits : Settings::resolve((array) config('fancy-http-guard.limits', []));
+
+        return Renderer::render($e, $rid, $rh, (int) $limits['maxMessageLength'])->toResponse();
     }
 
     /**

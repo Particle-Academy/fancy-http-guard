@@ -131,6 +131,7 @@ setting with a secure default:
 | `maxListLength` | 10,000 |
 | `maxErrors` | 20 |
 | `finiteNumbers` | true |
+| `maxMessageLength` | 300 (at most 4,000) |
 | `workbook.maxRows` | 100,000 |
 | `workbook.maxColumns` | 1,000 |
 | `workbook.maxCells` | 100,000 |
@@ -144,6 +145,27 @@ Beyond the limits:
   that sets the header.
 
 A bad key or value is refused when the app boots, or when a route declares it.
+
+### Long error messages
+
+`maxMessageLength` (default 300) is how many code points of YOUR sentence a
+public message keeps: an `abort()` / `HttpException` 4xx message, a validation
+item, or a public 5xx. Longer ones keep 299 and gain an ellipsis. Raise it in
+`limits`, a profile, or per route (`->guard(['maxMessageLength' => 2000])`). It
+cannot go above 4,000: a larger value is refused at boot.
+
+For one long, data-built refusal, raise the limit on that error alone instead:
+
+```php
+throw HttpError::public(422, 'rows_refused', $sentence, maxMessageLength: 2000);
+throw new ValidationFailed([['field' => 'rows', 'message' => $sentence, 'maxMessageLength' => 2000]]);
+```
+
+An override above 4,000 counts as 4,000, and it applies to that error or item
+only. **Only the length changes.** Control characters are still stripped at any
+length, a crash is still the fixed 500, and a non-public 5xx still never shows
+its message. A client reading the response through `fancyError()` truncates at
+its own `maxMessageLength` option (default 300), so raise that too.
 
 ## Contract
 

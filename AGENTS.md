@@ -40,8 +40,15 @@ side is `@particle-academy/fancy-http-errors`.
   limits by route name.
 - **Limits** (all settings, secure defaults): `maxBodyBytes` (1 MiB),
   `maxDepth` (32), `maxListLength` (10,000), `maxErrors` (20), `finiteNumbers`
-  (true), `workbook.maxRows` / `maxColumns` / `maxCells`. Also `profiles`,
-  `routes`, `request_id_header`, `trust_incoming_request_id`.
+  (true), `maxMessageLength` (300, at most 4,000), `workbook.maxRows` /
+  `maxColumns` / `maxCells`. Also `profiles`, `routes`, `request_id_header`,
+  `trust_incoming_request_id`.
+- **A long public message:** `maxMessageLength` is how many code points of the
+  app's own sentence a message keeps; more than 4,000 is refused at boot. For one
+  long data-built refusal, set it on that error alone:
+  `HttpError::public(422, 'rows_refused', $text, maxMessageLength: 2000)`, or a
+  `ValidationFailed` item's `'maxMessageLength' => 2000`. An override over 4,000
+  counts as 4,000 and reaches no other error or item.
 - **The envelope:** every JSON error is `{error, message, errors?, limit?,
   retryAfter?, requestId}`, with `X-Request-Id` on every response.
 - **A public 5xx:** `throw HttpError::public(503, 'maintenance', 'Back at 14:00
@@ -71,4 +78,12 @@ side is `@particle-academy/fancy-http-errors`.
   HTML pages and Inertia requests keep Laravel's own handling; a guard 422 on an
   Inertia request becomes a normal `ValidationException`.
 - **A bad setting fails at boot**, or when a route declares it.
+- **A longer message is not an unsanitised one.** `maxMessageLength` changes
+  the length only: control characters are still stripped, a crash is still the
+  fixed 500 and a non-public 5xx message is still never shown. Never put a path,
+  a query or a stack trace in a public sentence on the strength of a raised
+  limit.
+- **The client normaliser has its own limit.** `$response->fancyError()` cuts a
+  message at its `maxMessageLength` option (default 300) whatever the server
+  sent; pass a larger one when you raised the server's.
 - `trust_incoming_request_id` only behind a proxy that sets the header.

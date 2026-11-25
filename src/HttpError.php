@@ -17,6 +17,14 @@ use RuntimeException;
  *     throw HttpError::public(503, 'maintenance', 'Back at 14:00 UTC.', retryAfter: 600);
  *
  * A code that is not snake_case is a programming error, rendered as a 500.
+ *
+ * `maxMessageLength` lets THIS error's message be longer (or shorter) than the
+ * route's `limits.maxMessageLength`, for one long data-built refusal:
+ *
+ *     throw HttpError::public(422, 'rows_refused', $sentence, maxMessageLength: 2000);
+ *
+ * It is capped at 4000 code points, and the message is sanitised as always. It
+ * has no effect where the message is never shown (a non-public 5xx).
  */
 final class HttpError extends RuntimeException
 {
@@ -28,12 +36,14 @@ final class HttpError extends RuntimeException
         public readonly bool $isPublic = false,
         public readonly ?int $retryAfter = null,
         public readonly array $headers = [],
+        public readonly ?int $maxMessageLength = null,
     ) {
+        Settings::messageLengthOverride($maxMessageLength);
         parent::__construct($message);
     }
 
-    public static function public(int $status, string $error, string $message, ?int $retryAfter = null): self
+    public static function public(int $status, string $error, string $message, ?int $retryAfter = null, ?int $maxMessageLength = null): self
     {
-        return new self($status, $message, $error, true, $retryAfter);
+        return new self($status, $message, $error, true, $retryAfter, maxMessageLength: $maxMessageLength);
     }
 }
