@@ -28,11 +28,7 @@ promising otherwise until 1.0.
   300); `FancyHttpGuard::exceptions()` passes it for you.
 - Tests: `tests/Feature/MessageLengthTest.php`, the shared rows' new `failed`
   kind and `input.limits` in `tests/Support/Rows.php`, and four sabotage
-  mutations (23 in all). The shared rows (`http/request-guards` 0089 to 0098)
-  land in fancy-conformance after 0.63.0; all 98 pass here against that branch,
-  and the pin moves when it is released. That release also raises the envelope
-  schema's `message` bound to 4,000, and `resources/envelope.schema.json` must
-  take the new copy with the pin (`PinTest` enforces it).
+  mutations (23 in all).
 
 ### Changed
 
@@ -41,6 +37,15 @@ promising otherwise until 1.0.
   the fixed 500 and a non-public 5xx still never shows its message.
 
 - CI: re-pin org third-party allowlist to 2614224
+- `resources/envelope.schema.json` is fancy-conformance 0.64.0's copy: `message`
+  (top level and in `errors` items) may now be up to 4,000 characters, was 300.
+  A validator using the old copy would refuse a long message this package can
+  now send when an app raises `maxMessageLength`; a 300-character message still
+  validates under both.
+- Conformance fixtures 0.64.0: the pin moves to fancy-conformance 0.64.0 (was
+  0.62.0), in the CI checkout ref and `PINNED_SUITE_VERSION`, for the shared
+  message-length rows `http/request-guards` 0089 to 0098. The table now passes
+  98 rows (was 88). Test-only.
 - Conformance fixtures 0.62.0: the `http/request-guards` rows are now pinned at fancy-conformance 0.62.0 (was 0.48.0), in the CI checkout ref and `PINNED_SUITE_VERSION`; the sabotage sweep still catches 19 of 19. Test-only; no runtime change, nothing to do.
 
 ## [0.1.0] - 2026-11-18

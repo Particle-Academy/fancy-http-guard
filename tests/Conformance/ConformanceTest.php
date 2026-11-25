@@ -29,7 +29,7 @@ it('runs every http/request-guards row', function (): void {
 
     expect($summary['failed'])->toBe(0, json_encode(array_values(array_filter($summary['results'], fn ($r) => $r['status'] === 'fail')), JSON_PRETTY_PRINT));
     expect($summary['skipped'])->toBe(0);
-    expect($summary['passed'])->toBe(88);
+    expect($summary['passed'])->toBe(98);
 });
 
 it('runs every http/error-envelope row, the normaliser included', function (): void {
