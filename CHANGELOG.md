@@ -10,6 +10,8 @@ promising otherwise until 1.0.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-24
+
 ### Added
 
 - `limits.maxMessageLength`, a setting for public error messages
